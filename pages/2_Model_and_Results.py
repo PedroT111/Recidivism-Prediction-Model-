@@ -10,15 +10,15 @@ from model import (
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 import numpy as np
 
-@st.cache_data
+@st.cache_resource
 def get_base_results():
     return train_multiclass_random_forest_baseline()
 
-@st.cache_data
+@st.cache_resource
 def get_multiclase_results():
     return train_multiclass_random_forest_optimized()
 
-@st.cache_data
+@st.cache_resource
 def get_binario_results():
     return train_balanced_rf_binary()
 
