@@ -2,25 +2,22 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import numpy as np
 
 def setup_matplotlib():
     mpl.rcParams.update({
-        # Nitidez
         "figure.dpi": 200,
         "savefig.dpi": 200,
 
-        # Tipos de letra
         "font.size": 11,
         "axes.titlesize": 13,
         "axes.labelsize": 11,
 
-        # Bordes y grid suaves
         "axes.edgecolor": "#999999",
         "axes.grid": True,
         "grid.linestyle": "--",
         "grid.alpha": 0.3,
 
-        # Leyendas
         "legend.fontsize": 10,
     })
 
@@ -160,33 +157,102 @@ def limit_categories(df, var, max_cats=8):
     counts = df[var].value_counts()
 
     if len(counts) <= max_cats:
-        return df[var]  # no hace falta limitar
+        return df[var] 
 
     top_cats = counts.index[:max_cats-1]  
-    nueva_columna = df[var].apply(lambda x: x if x in top_cats else "Otros")
+    nueva_columna = df[var].apply(lambda x: x if x in top_cats else "Others")
 
     return nueva_columna
 
-def plot_bivariate_categorical(df, var, target):
+def plot_bivariate_categorical(df, var, target, labels_map: dict | None = None):
     serie_limitada = limit_categories(df, var, max_cats=7)
+
+    var_en = labels_map.get(var, var) if labels_map else var
+    target_en = labels_map.get(target, target) if labels_map else target
 
     tab = pd.crosstab(serie_limitada, df[target], normalize="index") * 100
     # Heatmap
     fig1, ax1 = plt.subplots(figsize=(7, 4))
-    sns.heatmap(tab, annot=True, fmt=".1f", cmap="Greens", ax=ax1)
-    ax1.set_title(f"Distribución porcentual de {target} dentro de {var}")
-    ax1.set_xlabel(target)
-    ax1.set_ylabel(var)
-    
-    # Barras apiladas
+    sns.heatmap(tab, annot=True, fmt=".1f", cmap="BuGn", ax=ax1)
+    ax1.set_title(f"Percentage distribution of {target_en} across categories of {var_en}")
+    ax1.set_xlabel(target_en)
+    ax1.set_ylabel(var_en)
+
     fig2, ax2 = plt.subplots(figsize=(7, 4))
-    tab.plot(kind="bar", stacked=True, ax=ax2, colormap="Greens")
-    ax2.set_ylabel("% dentro de cada categoría")
-    ax2.set_title(f"Reincidencia (%) según {var}")
-    ax2.legend(title=target, bbox_to_anchor=(1.05, 1), loc="upper left")
+    tab.plot(kind="bar", stacked=True, ax=ax2, colormap="BuGn", edgecolor="black", linewidth=0.5)
+    ax2.set_ylabel("Percentage within each category")
+    ax2.set_xlabel(var_en)
+    ax2.set_title(f"Recidivism (%) by {var_en}")
+    ax2.legend(title=target_en, bbox_to_anchor=(1.05, 1), loc="upper left")
     ax2.tick_params(axis="x", rotation=30)
 
 
 
     return fig1, fig2
 
+
+def plot_confusion_matrix(cm, class_names, cmap="Blues", figsize=(3.6, 2.9)):
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap=cmap,
+        cbar=False,
+        xticklabels=class_names,
+        yticklabels=class_names,
+        linewidths=0.4,
+        linecolor="#333333",
+        annot_kws={"fontsize": 8},
+        ax=ax,
+    )
+    ax.set_xlabel("Predicted label", fontsize=9)
+    ax.set_ylabel("True label", fontsize=9)
+    ax.tick_params(axis='x', labelsize=7, rotation=45)
+    ax.tick_params(axis='y', labelsize=7)
+    plt.tight_layout()
+    return fig
+
+
+
+def plot_confusion_matrix_normalized(
+    cm,
+    class_names,
+    cmap="Blues",
+    figsize=(3.6, 2.9),
+    decimals=1,
+):
+    """
+    Confusion matrix normalized by rows (percentages).
+    Each row sums to 100%.
+    """
+    cm = np.array(cm, dtype=float)
+    cm_norm = cm / cm.sum(axis=1, keepdims=True)
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    sns.heatmap(
+        cm_norm,
+        annot=True,
+        fmt="",                  
+        cmap=cmap,
+        cbar=False,
+        xticklabels=class_names,
+        yticklabels=class_names,
+        linewidths=0.4,
+        linecolor="#333333",
+        annot_kws={"fontsize": 8},
+        ax=ax,
+    )
+
+    for text in ax.texts:
+        value = float(text.get_text())
+        text.set_text(f"{value * 100:.{decimals}f}%")
+
+    ax.set_xlabel("Predicted label", fontsize=9)
+    ax.set_ylabel("True label", fontsize=9)
+    ax.tick_params(axis="x", labelsize=7, rotation=45)
+    ax.tick_params(axis="y", labelsize=7)
+
+    plt.tight_layout()
+    return fig
