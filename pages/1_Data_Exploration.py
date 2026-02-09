@@ -44,7 +44,7 @@ with tab_overview:
     st.dataframe(df.head())
 
     with st.expander("Statistical description"):
-        st.dataframe(df.describe(include="all"))
+        st.dataframe(df.describe())
 
 with tab_target:
     st.subheader("The target variable")
